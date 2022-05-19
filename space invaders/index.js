@@ -1,89 +1,266 @@
 const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
 
+console.log(prompt("wanna play? y/n"))
+
 //sträcker ut canvas över hela skärmen
 canvas.width = innerWidth
 canvas.height = innerHeight
 
-class Projectile{
-    constructor(){
-        this.position = {
-            x: 1000,
-            y:850
-        }
-        const image = new Image()
-        image.src = 'img/projectile.png'
-        image.onload = () => {
-        }
-        this.image = image 
-        this.width = image.width
-        this.height = image.height    
-    }
-        draw() {
-            //c.fillStyle = 'red'
-            //c.fillRect(this.position.x, this.position.y, this.width, this.height)
-            c.drawImage(this.image, this.position.x, this.position.y, this.height, this.width)
-        }
-    
-}
-
 class Player {
-    constructor(){
+    constructor() {
         this.position = {
-            x: 1000,
-            y: 850
+            x: 300,
+            y: 300
         }
 
         this.velocity = {
+            x:0,
+            y:0
+        }
+
+        const image = new Image()
+        image.src = "./img/spaceship.png"
+        image.onload = () => {
+            const scale = 0.15
+            this.image = image 
+            this.width = image.width * scale
+            this.height = image.height * scale
+            this.position = {
+                x: canvas.width / 2 - this.width / 2,
+                y: canvas.height - this.height - 20
+            }
+        }
+    }
+
+    draw() {
+        //c.fillStyle = 'red'
+        //c.fillRect(this.position.x, this.position.y, this.width, this.height)
+        if (this.image) 
+        c.drawImage(this.image, this.position.x, this.position.y, this.height, this.width)
+    }
+
+    update() {
+            this.draw()
+            this.position.x += this.velocity.x
+        
+    }
+}
+
+class Projectile {
+    constructor({ position, velocity }) {
+        this.position = position
+        this.velocity = velocity
+
+        this.radius = 4
+    }
+
+    draw() {
+        c.beginPath()
+        c.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2)
+        c.fillStyle = "red"
+        c.fill()
+        c.closePath()
+    }
+
+    update(){
+        this.draw()
+        this.position.x += this.velocity.x
+        this.position.y += this.velocity.y
+    }
+}
+
+
+class Invader {
+    constructor({position}) {
+        this.velocity = {
+            x:0,
+            y:0
+        }
+
+        const image = new Image()
+        image.src = "./img/invader.png"
+        image.onload = () => {
+            this.image = image 
+            this.width = image.width * 0.2
+            this.height = image.height * 0.2
+            this.position = {
+                x: position.x,
+                y: position.y
+            }
+        }   
+    }
+
+    draw() {
+        //c.fillStyle = 'red'
+        //c.fillRect(this.position.x, this.position.y, this.width, this.height)
+        if (this.image) 
+        c.drawImage(this.image, this.position.x, this.position.y, this.height, this.width)
+    }
+
+    update({velocity}) {
+        if (this.image){
+            this.draw()
+            this.position.x += velocity.x
+            this.position.y += velocity.y
+        }   
+        
+    }
+}
+
+class Grid {
+    constructor() {
+        this.position = {
             x: 0,
             y: 0
         }
 
-        const image = new Image()
-        image.src = 'img/spaceship.png'
-        image.onload = () => {
+        this.velocity = {
+            x: 10,
+            y: 0
         }
 
-        this.image = image 
-        this.width = image.width
-        this.height = image.height    
-    }
-        draw() {
-            //c.fillStyle = 'red'
-            //c.fillRect(this.position.x, this.position.y, this.width, this.height)
-            c.drawImage(this.image, this.position.x, this.position.y, this.height, this.width)
+        this.invaders = []
+
+        const columns  = Math.floor(Math.random() * 6 + 5)
+        const rows = Math.floor(Math.random() * 3 + 2)
+
+        this.width = columns * 30
+
+        for (let x = 0; x < columns; x++){
+            for (let y = 0; y < rows; y++){
+                this.invaders.push(
+                    new Invader({
+                        position: {
+                            x: x * 60,
+                            y: y * 60
+                }}))
+            }
         }
+        console.log(this.invaders)
+    }
+    update(){
+        this.position.x += this.velocity.x
+        this.position.y += this.velocity.y
+
+        this.velocity.y = 0
+
+        if (this.position.x + this.width >= canvas.width || this.position.x <= 0){
+            this.velocity.x = -this.velocity.x
+            this.velocity.y = 30
+        }
+    }
 }
-const projectiles = new Array()
+
 const player = new Player()
-player.draw()
+const projectiles = []
+const grids = [new Grid()]
+const keys = { 
+    a: {pressed: false},
+    d: {pressed: false},
+    space: {pressed:false}
+}
 
 function animate() {
     requestAnimationFrame(animate)
-    c.fillStyle =  'green'
+    c.fillStyle = 'green'
     c.fillRect(0, 0, canvas.width, canvas.height)
-    player.draw()
-    projectiles.forEach(element => {
-        element.draw()
-    });
+    player.update()
+    if (keys.a.pressed && player.position.x >= 0) {
+        player.velocity.x = -5} 
+    else if (keys.d.pressed && player.position.x + player.width <= canvas.width) {player.velocity.x = 5}
+    else {player.velocity.x = 0}
+    projectiles.forEach((projectile, index) => { 
+        if (projectile.position.y + projectile.radius <= 0) {
+            setTimeout(() =>{ projectiles.splice(index, 1)}, 0)
+        } else {
+            projectile.update()
+        }
+    })
+
+    grids.forEach((grid) => {
+        grid.update()
+        grid.invaders.forEach((invader, i) => {
+            invader.update({velocity: grid.velocity})
+
+            projectiles.forEach((projectile, j) => { 
+                if (
+                    projectile.position.y - projectile.radius <= 
+                        invader.position.y + invader.height && 
+                    projectile.position.x + projectile.radius >= 
+                        invader.position.x + invader.width && 
+                    projectile.position.x - projectile.radius <= 
+                        invader.position.x + invader.width && 
+                    projectile.position.y + projectile.radius >= 
+                        invader.position.y
+                )   {
+
+                    setTimeout(() => {
+                            const invaderFound = grid.invaders.find(
+                                (invader2) => invader2 === invader
+                            )
+                            const projectileFound = projectiles.find(
+                                (projectile2) => projectile2 === projectile
+                            )
+
+                            if (invaderFound && projectileFound) {
+                                grid.invaders.splice(i, 1)
+                                projectiles.splice(j, 1)
+                            }
+
+                            else if (invaderFound === 0){
+                                console.log ("u win")
+                            }
+                    }, 0)
+
+                }
+            })
+        })
+    })
+
 }
 
 animate()
 
-addEventListener("keydown", (event)=>{
-    switch(event.key){
+addEventListener("keydown", ({ key }) => {
+    switch(key){
         case "a":
-            player.position.x += -100
             console.log("left")
+            keys.a.pressed = true 
             break
         case "d":
-            player.position.x += 100
             console.log("right")
+            keys.d.pressed = true
             break
         case " ":
-            projectiles.push(new Projectile())
             console.log("space")
+            projectiles.push(new Projectile({
+                position: {
+                    x: player.position.x + player.width / 2,
+                    y: player.position.y
+                },
+                velocity: {
+                    x:0,
+                    y:-8    
+                }
+            }))
             break
+    }    
+})
+
+addEventListener("keyup", ({ key }) => {
+    switch(key){
+        case "a":
+            console.log("left")
+            keys.a.pressed = false
+            break
+            
+        case "d":
+            console.log("right")
+            keys.d.pressed = false
+            break
+            
+    
     }    
 })
 
