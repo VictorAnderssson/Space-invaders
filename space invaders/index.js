@@ -1,7 +1,14 @@
+//  let game =  {won: false}
+
+//while (this.invaders >= 1) {
+  //
+//} else {
+    //console.log(prompt("du vann, vill du spela igen?"))
+    //game.won = true
+//} 
+
 const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
-
-console.log(prompt("wanna play? y/n"))
 
 //sträcker ut canvas över hela skärmen
 canvas.width = innerWidth
@@ -10,8 +17,8 @@ canvas.height = innerHeight
 class Player {
     constructor() {
         this.position = {
-            x: 300,
-            y: 300
+            x: 0,
+            y: 0
         }
 
         this.velocity = {
@@ -70,7 +77,6 @@ class Projectile {
     }
 }
 
-
 class Invader {
     constructor({position}) {
         this.velocity = {
@@ -81,9 +87,10 @@ class Invader {
         const image = new Image()
         image.src = "./img/invader.png"
         image.onload = () => {
+            const scale = 0.2
             this.image = image 
-            this.width = image.width * 0.2
-            this.height = image.height * 0.2
+            this.width = image.width * scale
+            this.height = image.height * scale
             this.position = {
                 x: position.x,
                 y: position.y
@@ -121,7 +128,7 @@ class Grid {
         }
 
         this.invaders = []
-
+        
         const columns  = Math.floor(Math.random() * 6 + 5)
         const rows = Math.floor(Math.random() * 3 + 2)
 
@@ -162,6 +169,11 @@ const keys = {
 }
 
 function animate() {
+    if(grids[0].invaders.length == 0){
+        console.log(prompt("du vann, vill du spela igen?"))
+        game.won = true
+    }
+
     requestAnimationFrame(animate)
     c.fillStyle = 'green'
     c.fillRect(0, 0, canvas.width, canvas.height)
@@ -195,7 +207,7 @@ function animate() {
                         invader.position.y
                 )   {
 
-                    setTimeout(() => {
+                    setTimeout(() => { 
                             const invaderFound = grid.invaders.find(
                                 (invader2) => invader2 === invader
                             )
@@ -206,10 +218,6 @@ function animate() {
                             if (invaderFound && projectileFound) {
                                 grid.invaders.splice(i, 1)
                                 projectiles.splice(j, 1)
-                            }
-
-                            else if (invaderFound === 0){
-                                console.log ("u win")
                             }
                     }, 0)
 
@@ -259,8 +267,8 @@ addEventListener("keyup", ({ key }) => {
             console.log("right")
             keys.d.pressed = false
             break
-            
-    
     }    
 })
+
+
 
